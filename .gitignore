@@ -1,0 +1,12 @@
+.DS_Store
+dwh.cfg
+*.err
+*.log
+*.pid
+*.out
+airflow.cfg
+airflow.db
+__pycache__
+airflow/logs
+webserver_config.py
+etl_pipeline.key
