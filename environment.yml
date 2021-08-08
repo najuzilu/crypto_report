@@ -9,6 +9,7 @@ dependencies:
 - airflow
 - apache-airflow-providers-amazon
 - apache-airflow-providers-postgres
+- apache-airflow-providers-cncf-kubernetes
 - pandas
 - numpy
 - psycopg2
