@@ -10,3 +10,4 @@ __pycache__
 airflow/logs
 webserver_config.py
 etl_pipeline.key
+logs/
