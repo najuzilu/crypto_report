@@ -1,28 +1,29 @@
 CREATE TABLE IF NOT EXISTS public.staging_crypto (
-	base_fiat boolean,
-	base_id int4 NOT NULL,
-	base_name varchar(256),
-	base_route varchar(256),
-	base_symbol varchar(3),
-	id int4 NOT NULL,
-	markets_active boolean,
-	markets_exchange varchar(256),
-	markets_id int8 NOT NULL,
-	markets_pair varchar(6),
-	markets_route varchar(256),
-	quote_fiat boolean,
-	quote_id int4 NOT NULL,
-	quote_name varchar(256),
-	quote_route varchar(256),
-	quote_symbol varchar(3),
-	"route" varchar(256),
-	symbol varchar(256),
-	open_price numeric(18,0),
-	high_price numeric(18,0),
+	close_time timestamp NOT NULL,
+    open_price numeric(18,0),
+    high_price numeric(18,0),
 	low_price numeric(18,0),
 	close_price numeric(18,0),
-	volume numeric(18,0),
-	quote_volume numeric(18,0)
+    volume numeric(18,0),
+	quote_volume numeric(18,0),
+    id int4 NOT NULL,
+    symbol varchar(256),
+    base_id int4 NOT NULL,
+    base_symbol varchar(256),
+    base_name varchar(256),
+	base_fiat boolean,
+	base_route varchar(256),
+	quote_id int4 NOT NULL,
+    quote_symbol varchar(256),
+    quote_name varchar(256),
+    quote_fiat boolean,
+    quote_route varchar(256),
+    "route" varchar(256),
+    markets_id int8 NOT NULL,
+	markets_exchange varchar(256),
+	markets_pair varchar(256),
+    markets_active boolean,
+	markets_route varchar(256)
 );
 
 CREATE TABLE IF NOT EXISTS public.staging_news (
@@ -44,7 +45,7 @@ CREATE TABLE IF NOT EXISTS public.staging_news (
 
 CREATE TABLE IF NOT EXISTS public.asset_base (
 	id int4 NOT NULL,
-	symbol varchar(3),
+	symbol varchar(256),
 	name varchar(256),
 	fiat boolean,
 	"route" varchar(256),
@@ -53,7 +54,7 @@ CREATE TABLE IF NOT EXISTS public.asset_base (
 
 CREATE TABLE IF NOT EXISTS public.asset_quote (
 	id  int4 NOT NULL,
-	symbol varchar(3),
+	symbol varchar(256),
 	name varchar(256),
 	fiat boolean,
 	"route" varchar(256),
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.asset_quote (
 CREATE TABLE IF NOT EXISTS public.asset_markets (
 	id int4,
 	exchange varchar(256),
-	pair varchar(6),
+	pair varchar(256),
 	active boolean,
 	"route" varchar(256),
 	CONSTRAINT asset_markets_pkey PRIMARY KEY (id)
