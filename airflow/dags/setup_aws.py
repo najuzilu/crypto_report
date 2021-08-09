@@ -312,7 +312,7 @@ def SetupAWS() -> None:
     if str(aws_conn_name) == str(aws_conn.conn_id):
         session.query(Connection).filter(
             Connection.conn_id == aws_conn.conn_id
-        ).first().set_password(aws_conn.conn_password)
+        ).first().set_password(aws_conn.password)
         print(f"Connection {aws_conn.conn_id} already exists")
     else:
         session.add(aws_conn)
@@ -321,7 +321,7 @@ def SetupAWS() -> None:
     if str(redshift_conn_name) == str(redshift_conn.conn_id):
         session.query(Connection).filter(
             Connection.conn_id == redshift_conn.conn_id
-        ).first().set_password(redshift_conn.conn_password)
+        ).first().set_password(redshift_conn.password)
         print(f"Connection {redshift_conn.conn_id} already exists")
     else:
         session.add(redshift_conn)
