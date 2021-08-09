@@ -141,9 +141,6 @@ def DetectNewsSentiment(column_name: str) -> None:
 
     # iterate over prefix objects
     for obj in objs:
-        import pdb
-
-        pdb.set_trace()
         df = pd.read_csv(obj.get()["Body"])
         # detect sentiment on column_name
         get_sentiment(df, column_name)
