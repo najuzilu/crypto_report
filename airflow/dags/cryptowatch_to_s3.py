@@ -55,7 +55,7 @@ def process_asset_ohlc(s3, bucket: str, series: dict, key: str):
 
         try:
             s3.Object(
-                bucket, f"ohlc-candlestick/{exchange}/{pair}/{year}/{month}.csv"
+                bucket, f"ohlc-candlestick/{year}/{month}/{exchange}_{pair}.csv"
             ).put(Body=csv_buffer.getvalue())
         except Exception as e:
             msg = "ERROR: Could not dump market pairs data in S3."
