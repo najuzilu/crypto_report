@@ -3,6 +3,10 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.utils import timezone
 from setup_aws import SetupAWS
+from operators import (
+    CreateTablesOperator,
+    DropTablesOperator,
+)
 from airflow import DAG
 
 default_args = {
@@ -28,17 +32,17 @@ setup_aws_task = PythonOperator(
     python_callable=SetupAWS,
 )
 
-# drop_tables = DropTablesOperator(
-#     task_id="Drop_tables",
-#     dag=dag,
-#     redshift_conn_id="redshift",
-# )
+drop_tables = DropTablesOperator(
+    task_id="Drop_tables",
+    dag=setup_dag,
+    redshift_conn_id="redshift",
+)
 
-# create_tables = CreateTablesOperator(
-#     task_id="Create_tables",
-#     dag=dag,
-#     redshift_conn_id="redshift",
-# )
+create_tables = CreateTablesOperator(
+    task_id="Create_tables",
+    dag=setup_dag,
+    redshift_conn_id="redshift",
+)
 
 
 end_operator = DummyOperator(
@@ -46,4 +50,4 @@ end_operator = DummyOperator(
     dag=setup_dag,
 )
 
-start_operator >> setup_aws_task >> end_operator
+start_operator >> setup_aws_task >> drop_tables >> create_tables >> end_operator
