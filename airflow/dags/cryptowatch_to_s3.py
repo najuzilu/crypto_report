@@ -21,15 +21,15 @@ def create_ohlc_uri(pair: str, exchange: str, key: str, dt_format="%Y-%m-%d") ->
     return uri
 
 
-def process_asset_ohlc(s3, bucket: str, pair: str, exchange: str, key: str):
+def process_asset_ohlc(s3, bucket: str, series: dict, key: str):
     """
     TODO...
     """
+    pair = series["markets_pair"]
+    exchange = series["markets_exchange"]
     uri = create_ohlc_uri(pair, exchange, key)
     res = request_api(uri)
     ohlc_data = json.loads(res)
-
-    csv_buffer = StringIO()
     header = [
         "close_time",
         "open_price",
@@ -40,12 +40,17 @@ def process_asset_ohlc(s3, bucket: str, pair: str, exchange: str, key: str):
         "quote_volume",
     ]
 
+    csv_buffer = StringIO()
+    exchange = series["markets_exchange"]
+    pair = series["markets_pair"]
+
     # filter daily
     daily_data = ohlc_data["result"]["86400"]
     if len(daily_data) > 0:
         df = pd.DataFrame(data=daily_data, columns=header)
-        df["markets_pair"] = pair
-        df["markets_exchange"] = exchange
+        # update df to include series data
+        for k, v in series.items():
+            df[k] = v
         df.to_csv(csv_buffer, index=False)
 
         try:
@@ -67,29 +72,13 @@ def dump_to_s3(s3, bucket: str, pair_name: str, key: str):
     pair_details = get_json_objects(asset_pair_url)
     flat_pair = flatten_json(pair_details["result"])
 
-    data = []
-
     for row in flat_pair["markets"]:
         new_pair = {
             **{k: v for k, v in flat_pair.items() if k != "markets"},
             **{f"markets_{k}": v for k, v in row.items()},
         }
 
-        process_asset_ohlc(
-            s3, bucket, new_pair["markets_pair"], new_pair["markets_exchange"], key
-        )
-        data.append(new_pair)
-
-    csv_buffer = StringIO()
-    df = pd.DataFrame(data)
-    df.to_csv(csv_buffer, index=False)
-
-    try:
-        s3.Object(bucket, f"pairs/{pair_name}.csv").put(Body=csv_buffer.getvalue())
-    except Exception as e:
-        msg = "ERROR: Could not dump market pairs data in S3."
-        print(msg, e)
-        return
+        process_asset_ohlc(s3, bucket, new_pair, key)
 
 
 def CryptowatchToS3(ds, pair_base, pair_curr, **kwargs):

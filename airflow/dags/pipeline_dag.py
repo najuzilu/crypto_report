@@ -62,16 +62,7 @@ newsapi_task = PythonOperator(
     },
 )
 
-crypto_pairs_bucket_task = S3BucketOperator(
-    task_id="Check_pairs_bucket",
-    dag=dag,
-    aws_credentials_id="aws-credentials",
-    region=AWS_REGION,
-    s3_bucket=S3_BUCKET,
-    s3_prefix="pairs",
-)
-
-crypto_ohlc_bucket_task = S3BucketOperator(
+crypto_bucket_task = S3BucketOperator(
     task_id="Check_candlestick_bucket",
     dag=dag,
     aws_credentials_id="aws-credentials",
@@ -112,5 +103,5 @@ end_operator = DummyOperator(
 )
 
 start_operator >> [crypto_task, newsapi_task]
-crypto_task >> [crypto_pairs_bucket_task, crypto_ohlc_bucket_task] >> end_operator
+crypto_task >> crypto_bucket_task >> end_operator
 newsapi_task >> news_bucket_task >> sentiment_task >> sent_bucket_task >> end_operator
