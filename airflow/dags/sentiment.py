@@ -1,6 +1,5 @@
 # python3
 from utils import MyConfigParser
-from typing import Tuple, Dict
 from pathlib import Path
 from io import StringIO
 import pandas as pd
@@ -72,7 +71,7 @@ def get_sentiment(df, column_name: str) -> None:
     TODO.
     """
 
-    def _get_sentiment(client, text: str) -> Tuple[str, Dict[str:float]]:
+    def _get_sentiment(client, text: str):
         """
         TODO...
         """
