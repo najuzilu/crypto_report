@@ -63,6 +63,15 @@ class MyConfigParser:
     def news_secret_access_key(self):
         return self.config.get("NEWSAPI", "NEWS_SECRET_ACCESS_KEY")
 
+    def comprehend_access_role(self):
+        return self.config.get("LAMBDA", "COMPREHEND_ACCESS_ROLE")
+
+    def comprehend_access_policy(self):
+        return self.config.get("LAMBDA", "COMPREHEND_ACCESS_POLICY")
+
+    def comprehend_policy_arn(self):
+        return self.config.get("LAMBDA", "COMPREHEND_POLICY_ARN")
+
     def update_redshift_endpoint(self, new_endpoint: str):
         self.redshift_endpoint = new_endpoint
 
