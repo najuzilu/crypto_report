@@ -17,7 +17,7 @@ S3_BUCKET = my_config.s3_bucket()
 
 default_args = {
     "owner": "udacity",
-    "start_time": timezone.utcnow(),
+    "start_date": timezone.utcnow(),
 }
 
 dag = DAG(
