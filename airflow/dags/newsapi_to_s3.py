@@ -39,7 +39,6 @@ def dump_to_s3(s3, bucket: str, category: str, language: str) -> None:
         data.append(flat_article)
 
     df = pd.DataFrame(data)
-    df["popularity_idx"] = df.index.stop - df.index + 1  # reverse index
     df["source_id"].fillna(
         df.source_name.str.replace(" ", "_").str.lower(),
         inplace=True,
