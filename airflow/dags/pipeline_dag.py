@@ -6,7 +6,7 @@ from airflow.utils import timezone
 from cryptowatch_to_s3 import CryptowatchToS3
 from newsapi_to_s3 import NewsApiToS3
 from sentiment import DetectNewsSentiment
-from operators import SentimentQualityOperator
+from operators import S3BucketOperator
 from utils import MyConfigParser
 
 
@@ -62,6 +62,34 @@ newsapi_task = PythonOperator(
     },
 )
 
+crypto_pairs_bucket_task = S3BucketOperator(
+    task_id="Check_pairs_bucket",
+    dag=dag,
+    aws_credentials_id="aws-credentials",
+    region=AWS_REGION,
+    s3_bucket=S3_BUCKET,
+    s3_prefix="pairs",
+)
+
+crypto_ohlc_bucket_task = S3BucketOperator(
+    task_id="Check_candlestick_bucket",
+    dag=dag,
+    aws_credentials_id="aws-credentials",
+    region=AWS_REGION,
+    s3_bucket=S3_BUCKET,
+    s3_prefix="ohlc-candlestick",
+)
+
+news_bucket_task = S3BucketOperator(
+    task_id="Check_newsapi_bucket",
+    dag=dag,
+    aws_credentials_id="aws-credentials",
+    region=AWS_REGION,
+    s3_bucket=S3_BUCKET,
+    s3_prefix="news-articles",
+)
+
+
 sentiment_task = PythonOperator(
     task_id="Detect_news_sentiment",
     dag=dag,
@@ -69,8 +97,8 @@ sentiment_task = PythonOperator(
     op_kwargs={"column_name": "title"},
 )
 
-sentiment_check = SentimentQualityOperator(
-    task_id="Check_sentiment_quality",
+sent_bucket_task = S3BucketOperator(
+    task_id="Check_sentiment_bucket",
     dag=dag,
     aws_credentials_id="aws-credentials",
     region=AWS_REGION,
@@ -84,7 +112,5 @@ end_operator = DummyOperator(
 )
 
 start_operator >> [crypto_task, newsapi_task]
-newsapi_task >> sentiment_task
-sentiment_task >> sentiment_check
-sentiment_check >> end_operator
-crypto_task >> end_operator
+crypto_task >> [crypto_pairs_bucket_task, crypto_ohlc_bucket_task] >> end_operator
+newsapi_task >> news_bucket_task >> sentiment_task >> sent_bucket_task >> end_operator
