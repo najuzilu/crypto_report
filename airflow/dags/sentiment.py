@@ -88,6 +88,10 @@ def get_sentiment(df, column_name: str) -> None:
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     )
 
+    # move over to api >>>
+    df["publishedAt"] = pd.to_datetime(df["publishedAt"], format="%Y-%m-%dT%H:%M:%SZ")
+    df["published_date"] = df["publishedAt"].apply(lambda x: x.strftime("%Y-%m-%d"))
+
     # create new sentiment result columns
     for idx, row in df.iterrows():
         sentiment, scores = _get_sentiment(comprehend, row[column_name])
@@ -152,3 +156,6 @@ def DetectNewsSentiment(column_name: str) -> None:
 
     print(f"{__file__} ran successfully.")
     return
+
+
+DetectNewsSentiment("title")
