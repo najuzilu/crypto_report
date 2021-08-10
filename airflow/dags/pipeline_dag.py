@@ -1,27 +1,34 @@
 # python3
-from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.utils import timezone
+from airflow.operators.subdag_operator import SubDagOperator
+from airflow.operators.dummy_operator import DummyOperator
+from pipeline_subdag import load_dimension_tables_dag
+from pipeline_subdag import get_s3_to_redshift_dag
 from cryptowatch_to_s3 import CryptowatchToS3
-from newsapi_to_s3 import NewsApiToS3
 from sentiment import DetectNewsSentiment
-from operators import S3BucketOperator
+from newsapi_to_s3 import NewsApiToS3
+from airflow.utils import timezone
 from utils import MyConfigParser
-
+from operators import (
+    S3BucketOperator,
+)
+from helpers import SqlQueries
+from airflow import DAG
 
 my_config = MyConfigParser()
 AWS_REGION = my_config.aws_region()
 S3_BUCKET = my_config.s3_bucket()
 
 
+start_date = timezone.utcnow()
 default_args = {
     "owner": "udacity",
-    "start_date": timezone.utcnow(),
+    "start_date": start_date,
 }
 
+dag_name = "etl_pipeline"
 dag = DAG(
-    "etl_pipeline",
+    dag_name,
     default_args=default_args,
     description="ETL Pipeline for Automating Monthly Cryptoasset Reports.",
     schedule_interval="@monthly",
@@ -97,11 +104,147 @@ sent_bucket_task = S3BucketOperator(
     s3_prefix="news-articles-sent",
 )
 
+staging_crypto_id = "Stage_crypto"
+staging_crypto_task = SubDagOperator(
+    subdag=get_s3_to_redshift_dag(
+        dag_name,
+        staging_crypto_id,
+        "redshift",
+        "aws-credentials",
+        AWS_REGION,
+        "staging_crypto",
+        S3_BUCKET,
+        "ohlc-candlestick",
+        start_date=start_date,
+    ),
+    task_id=staging_crypto_id,
+    dag=dag,
+)
+
+
+staging_news_id = "Stage_news"
+staging_news_task = SubDagOperator(
+    subdag=get_s3_to_redshift_dag(
+        dag_name,
+        staging_news_id,
+        "redshift",
+        "aws-credentials",
+        AWS_REGION,
+        "staging_news",
+        S3_BUCKET,
+        "news-articles-sent",
+        start_date=start_date,
+    ),
+    task_id=staging_news_id,
+    dag=dag,
+)
+
+
 end_operator = DummyOperator(
     task_id="Stop_execution",
     dag=dag,
 )
 
-start_operator >> [crypto_task, newsapi_task]
-crypto_task >> crypto_bucket_task >> end_operator
-newsapi_task >> news_bucket_task >> sentiment_task >> sent_bucket_task >> end_operator
+load_author_task_id = "Load_author_table"
+load_author_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_author_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="authors",
+        query=SqlQueries.author_table_insert,
+    )
+)
+
+load_time_task_id = "Load_time_table"
+load_time_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_time_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="time",
+        query=SqlQueries.time_table_insert,
+    )
+)
+
+load_sources_task_id = "Load_sources_table"
+load_sources_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_sources_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="sources",
+        query=SqlQueries.sources_table_insert,
+    )
+)
+
+load_asset_base_task_id = "Load_asset_base_table"
+load_asset_base_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_asset_base_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="asset_base",
+        query=SqlQueries.asset_base_table_insert,
+    )
+)
+
+load_asset_quote_task_id = "Load_asset_quote_table"
+load_asset_quote_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_asset_quote_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="asset_quote",
+        query=SqlQueries.asset_quote_table_insert,
+    )
+)
+
+load_asset_markets_task_id = "Load_asset_markets_table"
+load_asset_markets_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_asset_markets_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="asset_markets",
+        query=SqlQueries.asset_markets_table_insert,
+    )
+)
+
+load_candlestick_task_id = "Load_candlestick_table"
+load_candlestick_table = SubDagOperator(
+    subdag=load_dimension_tables_dag(
+        parent_dag=dag_name,
+        task_id=load_candlestick_task_id,
+        redshift_conn_id="redshift",
+        aws_credentials_id="aws-credentials",
+        table="candlestick",
+        query=SqlQueries.candlestick_table_insert,
+    )
+)
+
+
+start_operator >> [crypto_bucket_task, news_bucket_task]
+crypto_bucket_task >> staging_crypto_task
+news_bucket_task >> sent_bucket_task >> staging_news_task
+staging_crypto_task >> [
+    load_time_table,
+    load_asset_base_table,
+    load_asset_quote_table,
+    load_asset_markets_table,
+    load_candlestick_table,
+]
+staging_news_task >> [load_author_table, load_sources_table, load_candlestick_table]
+
+[
+    load_time_table,
+    load_asset_base_table,
+] >> end_operator
+[load_asset_quote_table, load_asset_markets_table] >> end_operator
+[load_author_table, load_sources_table, load_candlestick_table] >> end_operator
