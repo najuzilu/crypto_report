@@ -55,7 +55,7 @@ def dump_to_s3(s3, bucket: str, category: str, language: str) -> None:
 
         try:
             s3.Object(
-                bucket, f"news-articles/{category}/{source_id}/{year}_{month}.csv"
+                bucket, f"news-articles/{year}/{month}/{category}_{source_id}.csv"
             ).put(Body=csv_buffer.getvalue())
         except Exception as e:
             msg = f"""ERROR: Could not dump {category}/

@@ -51,6 +51,12 @@ def process_asset_ohlc(s3, bucket: str, series: dict, key: str):
         # update df to include series data
         for k, v in series.items():
             df[k] = v
+
+        # convert close time to datetime
+        df["close_time"] = df["close_time"].apply(
+            lambda x: datetime.fromtimestamp(int(x))
+        )
+        df["close_date"] = df["close_time"].apply(lambda x: x.strftime("%Y-%m-%d"))
         df.to_csv(csv_buffer, index=False)
 
         try:
@@ -67,7 +73,9 @@ def process_asset_ohlc(s3, bucket: str, series: dict, key: str):
 
 
 def dump_to_s3(s3, bucket: str, pair_name: str, key: str):
-    """"""
+    """
+    TODO...
+    """
     asset_pair_url = f"https://api.cryptowat.ch/pairs/{pair_name}?apikey={key}"
     pair_details = get_json_objects(asset_pair_url)
     flat_pair = flatten_json(pair_details["result"])
