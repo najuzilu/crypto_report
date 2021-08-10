@@ -140,11 +140,6 @@ staging_news_task = SubDagOperator(
 )
 
 
-end_operator = DummyOperator(
-    task_id="Stop_execution",
-    dag=dag,
-)
-
 load_author_task_id = "Load_author_table"
 load_author_table = SubDagOperator(
     subdag=load_dimension_tables_dag(
@@ -154,7 +149,10 @@ load_author_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="authors",
         query=SqlQueries.author_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_author_task_id,
+    dag=dag,
 )
 
 load_time_task_id = "Load_time_table"
@@ -166,7 +164,10 @@ load_time_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="time",
         query=SqlQueries.time_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_time_task_id,
+    dag=dag,
 )
 
 load_sources_task_id = "Load_sources_table"
@@ -178,7 +179,10 @@ load_sources_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="sources",
         query=SqlQueries.sources_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_sources_task_id,
+    dag=dag,
 )
 
 load_asset_base_task_id = "Load_asset_base_table"
@@ -190,7 +194,10 @@ load_asset_base_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="asset_base",
         query=SqlQueries.asset_base_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_asset_base_task_id,
+    dag=dag,
 )
 
 load_asset_quote_task_id = "Load_asset_quote_table"
@@ -202,7 +209,10 @@ load_asset_quote_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="asset_quote",
         query=SqlQueries.asset_quote_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_asset_quote_task_id,
+    dag=dag,
 )
 
 load_asset_markets_task_id = "Load_asset_markets_table"
@@ -214,7 +224,10 @@ load_asset_markets_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="asset_markets",
         query=SqlQueries.asset_markets_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_asset_markets_task_id,
+    dag=dag,
 )
 
 load_candlestick_task_id = "Load_candlestick_table"
@@ -226,7 +239,15 @@ load_candlestick_table = SubDagOperator(
         aws_credentials_id="aws-credentials",
         table="candlestick",
         query=SqlQueries.candlestick_table_insert,
-    )
+        start_date=start_date,
+    ),
+    task_id=load_candlestick_task_id,
+    dag=dag,
+)
+
+end_operator = DummyOperator(
+    task_id="Stop_execution",
+    dag=dag,
 )
 
 
