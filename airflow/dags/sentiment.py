@@ -156,6 +156,3 @@ def DetectNewsSentiment(column_name: str) -> None:
 
     print(f"{__file__} ran successfully.")
     return
-
-
-DetectNewsSentiment("title")
