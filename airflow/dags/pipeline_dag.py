@@ -251,9 +251,8 @@ end_operator = DummyOperator(
 )
 
 
-start_operator >> [crypto_bucket_task, news_bucket_task]
-crypto_bucket_task >> staging_crypto_task
-news_bucket_task >> sent_bucket_task >> staging_news_task
+start_operator >> [crypto_task, newsapi_task]
+crypto_task >> crypto_bucket_task >> staging_crypto_task
 staging_crypto_task >> [
     load_time_table,
     load_asset_base_table,
@@ -261,6 +260,10 @@ staging_crypto_task >> [
     load_asset_markets_table,
     load_candlestick_table,
 ]
+
+
+newsapi_task >> news_bucket_task >> sent_bucket_task >> staging_news_task
+
 staging_news_task >> [load_author_table, load_sources_table, load_candlestick_table]
 
 [
