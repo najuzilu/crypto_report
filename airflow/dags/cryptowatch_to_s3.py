@@ -1,6 +1,8 @@
+# python3
 from utils import MyConfigParser
 from datetime import datetime
 from io import StringIO
+from typing import List
 from utils import (
     get_json_objects,
     process_ds,
@@ -14,16 +16,25 @@ import json
 
 def create_ohlc_uri(pair: str, exchange: str, key: str, dt_format="%Y-%m-%d") -> str:
     """
-    TODO...
+    Create api uri given input parameters
+    :param pair:        Cryptoasset pair (i.e., btc)
+    :param exchange:    Cryptoasset exchange (i.e., kraken)
+    :param key:         Cryptowatch access key
+    :param dt_format:   Date format
+    :return uri:        OHLC link
     """
     uri = "https://api.cryptowat.ch/markets/"
     uri += f"{exchange}/{pair}/ohlc?after={after}&before={before}&apikey={key}"
     return uri
 
 
-def process_asset_ohlc(s3, bucket: str, series: dict, key: str):
+def dump_to_s3(s3, bucket: str, series: dict, key: str) -> None:
     """
-    TODO...
+    Extract daily interval candlelist observations and dump to S3 bucket
+    :param s3:          AWS S3 resource
+    :param bucket:      AWS S3 bucket name
+    :param series:      Data values as dict from `asset_pair_details`
+    :param key:         Cryptowatch access key
     """
     pair = series["markets_pair"]
     exchange = series["markets_exchange"]
@@ -72,9 +83,13 @@ def process_asset_ohlc(s3, bucket: str, series: dict, key: str):
         return
 
 
-def dump_to_s3(s3, bucket: str, pair_name: str, key: str):
+def query_pair_details(s3, bucket: str, pair_name: str, key: str) -> None:
     """
-    TODO...
+    Iterate over pair details and extract `pair_details` metadata
+    :param s3:          AWS S3 resource
+    :param bucket:      AWS S3 bucket name
+    :param pair_name:   Cryptoasset name (i.e., btc)
+    :param key:         Cryptowatch access key
     """
     asset_pair_url = f"https://api.cryptowat.ch/pairs/{pair_name}?apikey={key}"
     pair_details = get_json_objects(asset_pair_url)
@@ -86,12 +101,17 @@ def dump_to_s3(s3, bucket: str, pair_name: str, key: str):
             **{f"markets_{k}": v for k, v in row.items()},
         }
 
-        process_asset_ohlc(s3, bucket, new_pair, key)
+        dump_to_s3(s3, bucket, new_pair, key)
 
 
-def CryptowatchToS3(ds, pair_base, pair_curr, **kwargs):
+def CryptowatchToS3(
+    ds: str, pair_base: List[str], pair_curr: List[str], **kwargs
+) -> None:
     """
-    TODO...
+    Extract data using Cryptowatch REST API and dump to AWS S3
+    :param ds:              Airflow macro reference `ds`
+    :param pair_base:       List of cryptoasset names (i.e., [btc,eth,...])
+    :param pair_curr:       List of cryptoasset currencies (i.e., [eur,usd,...])
     """
     my_config = MyConfigParser()
 
@@ -119,5 +139,5 @@ def CryptowatchToS3(ds, pair_base, pair_curr, **kwargs):
     )
 
     for pair in pairs:
-        dump_to_s3(s3, S3_BUCKET, pair, CRYPTO_ACCESS_KEY_ID)
+        query_pair_details(s3, S3_BUCKET, pair, CRYPTO_ACCESS_KEY_ID)
     return

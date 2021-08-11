@@ -4,14 +4,16 @@ from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.dummy_operator import DummyOperator
 from pipeline_subdag import load_dimension_tables_dag
 from pipeline_subdag import get_s3_to_redshift_dag
+from airflow.operators.udacity_plugin import (
+    DataQualityOperator,
+    LoadFactOperator,
+    S3BucketOperator,
+)
 from cryptowatch_to_s3 import CryptowatchToS3
 from sentiment import DetectNewsSentiment
 from newsapi_to_s3 import NewsApiToS3
 from airflow.utils import timezone
 from utils import MyConfigParser
-from operators import (
-    S3BucketOperator,
-)
 from helpers import SqlQueries
 from airflow import DAG
 
@@ -19,21 +21,27 @@ my_config = MyConfigParser()
 AWS_REGION = my_config.aws_region()
 S3_BUCKET = my_config.s3_bucket()
 
-
+# set arguments
 start_date = timezone.utcnow()
 default_args = {
     "owner": "udacity",
     "start_date": start_date,
+    "retries": 3,
+    "catchup": False,
+    "email_on_retry": False,
 }
 
+# set schedule interval to the first of
+# every month at 7am
 dag_name = "etl_pipeline"
 dag = DAG(
     dag_name,
     default_args=default_args,
     description="ETL Pipeline for Automating Monthly Cryptoasset Reports.",
-    schedule_interval="@monthly",
+    schedule_interval="0 7 1 * *",
 )
 
+# Setup Operators
 start_operator = DummyOperator(
     task_id="Begin_execution",
     dag=dag,
@@ -140,18 +148,18 @@ staging_news_task = SubDagOperator(
 )
 
 
-load_author_task_id = "Load_author_table"
-load_author_table = SubDagOperator(
+load_articles_task_id = "Load_articles_table"
+load_articles_table = SubDagOperator(
     subdag=load_dimension_tables_dag(
         parent_dag=dag_name,
-        task_id=load_author_task_id,
+        task_id=load_articles_task_id,
         redshift_conn_id="redshift",
         aws_credentials_id="aws-credentials",
-        table="authors",
-        query=SqlQueries.author_table_insert,
+        table="articles",
+        query=SqlQueries.articles_table_insert,
         start_date=start_date,
     ),
-    task_id=load_author_task_id,
+    task_id=load_articles_task_id,
     dag=dag,
 )
 
@@ -231,26 +239,29 @@ load_asset_markets_table = SubDagOperator(
 )
 
 load_candlestick_task_id = "Load_candlestick_table"
-load_candlestick_table = SubDagOperator(
-    subdag=load_dimension_tables_dag(
-        parent_dag=dag_name,
-        task_id=load_candlestick_task_id,
-        redshift_conn_id="redshift",
-        aws_credentials_id="aws-credentials",
-        table="candlestick",
-        query=SqlQueries.candlestick_table_insert,
-        start_date=start_date,
-    ),
+load_candlestick_table = LoadFactOperator(
     task_id=load_candlestick_task_id,
     dag=dag,
+    redshift_conn_id="redshift",
+    query=SqlQueries.candlestick_table_insert,
 )
+
+
+run_quality_checks = DataQualityOperator(
+    task_id="Run_data_quality_checks",
+    dag=dag,
+    redshift_conn_id="redshift",
+    tables=["candlestick"],
+    provide_context=True,
+)
+
 
 end_operator = DummyOperator(
     task_id="Stop_execution",
     dag=dag,
 )
 
-
+# setup DAG
 start_operator >> [crypto_task, newsapi_task]
 crypto_task >> crypto_bucket_task >> staging_crypto_task
 staging_crypto_task >> [
@@ -261,14 +272,15 @@ staging_crypto_task >> [
     load_candlestick_table,
 ]
 
+newsapi_task >> news_bucket_task >> sentiment_task
+sentiment_task >> sent_bucket_task >> staging_news_task
+staging_news_task >> [
+    load_articles_table,
+    load_sources_table,
+    load_candlestick_table,
+]
 
-newsapi_task >> news_bucket_task >> sent_bucket_task >> staging_news_task
-
-staging_news_task >> [load_author_table, load_sources_table, load_candlestick_table]
-
-[
-    load_time_table,
-    load_asset_base_table,
-] >> end_operator
-[load_asset_quote_table, load_asset_markets_table] >> end_operator
-[load_author_table, load_sources_table, load_candlestick_table] >> end_operator
+[load_time_table, load_asset_base_table] >> run_quality_checks
+[load_asset_quote_table, load_asset_markets_table] >> run_quality_checks
+[load_articles_table, load_sources_table, load_candlestick_table] >> run_quality_checks
+run_quality_checks >> end_operator

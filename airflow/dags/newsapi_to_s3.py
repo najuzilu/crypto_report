@@ -1,5 +1,6 @@
 # python3
 from utils import MyConfigParser
+from typing import List
 from io import StringIO
 from utils import (
     get_json_objects,
@@ -12,7 +13,11 @@ import boto3
 
 def dump_to_s3(s3, bucket: str, category: str, language: str) -> None:
     """
-    TODO...
+    Extract data through REST API and dump to S3 bucket
+    :param s3:          AWS S3 resource
+    :param bucket:      AWS S3 bucket name
+    :param category:    Filter news by category (i.e., "bitcoin")
+    :param language:    Search news with language (i.e, "en")
     """
     # set page size to 100 which is max
     page_size = 100
@@ -64,9 +69,12 @@ def dump_to_s3(s3, bucket: str, category: str, language: str) -> None:
             continue
 
 
-def NewsApiToS3(ds, categories, language, **kwargs):
+def NewsApiToS3(ds: str, categories: List[str], language: str, **kwargs) -> None:
     """
-    TODO...
+    Extract data using NewsAPI REST API and dump to AWS S3
+    :param ds:              Airflow macro reference `ds`
+    :param categories:      List of categories to filter news
+    :param language:    Search news with language (i.e, "en")
     """
     my_config = MyConfigParser()
 

@@ -9,7 +9,8 @@ import json
 
 def setup_aws_comprehend(iam) -> None:
     """
-    TODO...
+    Setup AWS Comprehend and run sentiment analysis on text data
+    :param iam:     AWS IAM role
     """
     # path where json docs are located
     path = Path(__file__).parent.resolve()
@@ -66,14 +67,17 @@ def setup_aws_comprehend(iam) -> None:
             return
 
 
-def get_sentiment(df, column_name: str) -> None:
+def get_sentiment(df: pd.DataFrame, column_name: str) -> None:
     """
-    TODO.
+    Setup comprehend client, fix date (transfer!), read S3 object, run sentiment
+    analysis and dump to new S3 bucket
+    :param df:                  Data in dataframe format
+    :param column_name:         Name of column on which sentiment should be applied
     """
 
     def _get_sentiment(client, text: str):
         """
-        TODO...
+        Helper method for `get_sentiment`
         """
         sentiment = client.detect_sentiment(Text=text, LanguageCode="en")
         sent_type = sentiment["Sentiment"]
@@ -89,7 +93,22 @@ def get_sentiment(df, column_name: str) -> None:
     )
 
     # move over to api >>>
-    df["publishedAt"] = pd.to_datetime(df["publishedAt"], format="%Y-%m-%dT%H:%M:%SZ")
+    try:
+        df["publishedAt"] = pd.to_datetime(
+            df["publishedAt"], format="%Y-%m-%dT%H:%M:%SZ"
+        )
+    except Exception:
+        pass
+
+    try:
+        df["publishedAt"] = pd.to_datetime(
+            df["publishedAt"], format="%Y-%m-%d %H:%M:%S"
+        )
+    except Exception as e:
+        msg = "ERROR: Could not format datetime."
+        print(msg, e)
+        return
+
     df["published_date"] = df["publishedAt"].apply(lambda x: x.strftime("%Y-%m-%d"))
 
     # create new sentiment result columns
@@ -105,7 +124,8 @@ def get_sentiment(df, column_name: str) -> None:
 
 def DetectNewsSentiment(column_name: str) -> None:
     """
-    TODO...
+    Detect sentiment on collection of text using AWS Comprehend
+    :param column_name:         Name of column on which sentiment should be applied
     """
     my_config = MyConfigParser()
 
