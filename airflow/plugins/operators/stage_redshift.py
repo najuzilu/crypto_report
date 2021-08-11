@@ -6,6 +6,34 @@ from airflow.models import BaseOperator
 
 
 class StageToRedshiftOperator(BaseOperator):
+    """
+    Operator that performs checks on a Amazon S3 bucket and prefix
+
+    Attributes
+    ----------
+    redshift_conn_id : str
+        Airflow connection id to Amazon Redshift
+    aws_credentials_id : str
+        Airflow connection id to Amazon Web Services
+    region : str
+        Amazon S3 bucket region
+    table : str
+        Name of table where data will be ingested
+    s3_bucket : str
+        Amazon S3 bucket name
+    s3_key : str
+        Amazon S3 bucket prefix
+    delimiter : str
+        [Optional] Delimiter to use
+    ignore_headers : int
+        [Optional] Skip headers when reading csv file
+
+    Methods
+    -------
+    execute(context):
+        Loads data from S3 to Redshift staging tables
+    """
+
     ui_color = "#358140"
     template_fields = ("s3_key",)
     copy_sql = """
@@ -33,7 +61,17 @@ class StageToRedshiftOperator(BaseOperator):
         *args,
         **kwargs,
     ):
-
+        """
+        Constructs all attributes for the stage table operator
+        :param redshift_conn_id:            Airflow connection id to Amazon Redshift
+        :param aws_credentials_id :         Airflow connection id to Amazon Web Services
+        :param region :                     Amazon S3 bucket region
+        :param table :                      Name of table where data will be ingested
+        :param s3_bucket :                  Amazon S3 bucket name
+        :param s3_key :                     Amazon S3 bucket prefix
+        :param delimiter :                  [Optional] Delimiter to use
+        :param ignore_headers :             [Optional] Skip headers when reading CSV
+        """
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
         self.redshift_conn_id = redshift_conn_id
         self.aws_credentials_id = aws_credentials_id
@@ -45,6 +83,10 @@ class StageToRedshiftOperator(BaseOperator):
         self.ignore_headers = ignore_headers
 
     def execute(self, context):
+        """
+        Loads data from S3 to Redshift dimension table
+        :param context:                   Context passed through Airflow
+        """
         aws_hook = AwsHook(self.aws_credentials_id)
         credentials = aws_hook.get_credentials()
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)

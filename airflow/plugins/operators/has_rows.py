@@ -6,14 +6,40 @@ import logging
 
 
 class HasRowsOperator(BaseOperator):
+    """
+    Operator that performs checks on tables. It is used to
+    check dimension and staging tables.
+
+    Attributes
+    ----------
+    redshift_conn_id : str
+        Airflow connection id to Amazon Redshift
+    table : str
+        Name of table where data check must be performed
+
+    Methods
+    -------
+    execute(context):
+        Performs multiple checks on Redshift table
+    """
+
     @apply_defaults
     def __init__(self, redshift_conn_id="", table="", *args, **kwargs):
-
+        """
+        Constructs all attributes for the create operator
+        :param redshift_conn_id:      Airflow connection id to Amazon Redshift
+        :param table:                 Name of table where checks must be performed
+        """
         super(HasRowsOperator, self).__init__(*args, **kwargs)
         self.table = table
         self.redshift_conn_id = redshift_conn_id
 
     def execute(self, context):
+        """
+        Connect to Redshit through PostgresHook, check that table has observations
+        and is not empty
+        :param context:                   Context passed through Airflow
+        """
         redshift_hook = PostgresHook(postgres_conn_id=self.redshift_conn_id)
         records = redshift_hook.get_records(f"SELECT COUNT(*) FROM public.{self.table}")
 

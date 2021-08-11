@@ -4,6 +4,25 @@ from airflow.models import BaseOperator
 
 
 class S3BucketOperator(BaseOperator):
+    """
+    Operator that performs checks on a Amazon S3 bucket and prefix
+
+    Attributes
+    ----------
+    aws_credentials_id : str
+        Airflow connection id to Amazon Web Services
+    region : str
+        Amazon S3 bucket region
+    s3_bucket : str
+        Amazon S3 bucket name
+    s3_prefix : str
+        Amazon S3 bucket prefix
+
+    Methods
+    -------
+    execute(context):
+        Performs multiple checks on Amazon S3 bucket
+    """
 
     ui_color = "#9dc949"
     template_fields = ("s3_prefix",)
@@ -18,6 +37,13 @@ class S3BucketOperator(BaseOperator):
         *args,
         **kwargs,
     ):
+        """
+        Constructs all attributes for the bucket object
+        :param  aws_credentials_id:      Airflow connection id to Amazon Web Services
+        :param region:                   Amazon S3 bucket region
+        :param s3_bucket:                Amazon S3 bucket name
+        :param s3_prefix:                Amazon S3 bucket prefix
+        """
         super(S3BucketOperator, self).__init__(*args, **kwargs)
         self.aws_credentials_id = aws_credentials_id
         self.region = region
@@ -25,6 +51,12 @@ class S3BucketOperator(BaseOperator):
         self.s3_prefix = s3_prefix
 
     def execute(self, context):
+        """
+        Performs multiple checks on Amazon S3 bucket: does bucket with prefix exist and
+        does the bucket and prefix have less than 1 rendered key
+        :param context:                   Context passed through Airflow
+        """
+
         s3_hook = S3Hook(self.aws_credentials_id)
 
         if not s3_hook.check_for_prefix(self.s3_bucket, self.s3_prefix, delimiter="/"):

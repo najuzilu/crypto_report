@@ -15,7 +15,7 @@ class SqlQueries:
         FROM public.staging_crypto;
     """
 
-    author_table_insert = """
+    articles_table_insert = """
         INSERT INTO public.{} (
             author, content, description,
             title, url, url_to_image, published_at,
@@ -25,7 +25,7 @@ class SqlQueries:
             title, url, urlToImage, publishedAt,
             published_date
         FROM
-	        public.staging_news;
+            public.staging_news;
     """
 
     sources_table_insert = """
@@ -70,7 +70,7 @@ class SqlQueries:
     """
 
     candlestick_table_insert = """
-        INSERT INTO public.{} (
+        INSERT INTO public.candlestick (
             ohlc_id,
             symbol,
             base_id,
@@ -94,34 +94,45 @@ class SqlQueries:
             neutral_score
         )
         SELECT
-            crypto.id,
-            crypto.symbol,
-            crypto.base_id,
-            crypto.quote_id,
-            crypto.route,
-            crypto.markets_id,
-            crypto.close_date,
-            crypto.close_time,
-            crypto.open_price,
-            crypto.high_price,
-            crypto.low_price,
-            crypto.close_price,
-            crypto.volume,
-            crypto.quote_volume,
-            news.id,
-            news.source_id,
-            news.sentiment,
-            news.positive_score,
-            news.negative_score,
-            news.mixed_score,
-            news.neutral_score
-        FROM public.staging_crypto crypto
-        JOIN
-            (SELECT *
-                FROM public.articles articles
-                JOIN public.staging_news staging
-                ON articles.author = staging.author
-                    AND articles.url = staging.url
-                    AND articles.published_date = staging.publish_date) news
-        ON crypto.close_date = news.publish_date;
-    """
+            id,
+            symbol,
+            base_id,
+            quote_id,
+            route,
+            markets_id,
+            close_date,
+            close_time,
+            open_price,
+            high_price,
+            low_price,
+            close_price,
+            volume,
+            quote_volume,
+            article_id,
+            source_id,
+            sentiment,
+            positive_score,
+            negative_score,
+            mixed_score,
+            neutral_score
+        FROM
+            (
+                SELECT
+                    articles.id AS article_id,
+                    news.source_id,
+                    news.published_date,
+                    news.sentiment,
+                    news.positive_score,
+                    news.negative_score,
+                    news.mixed_score,
+                    news.neutral_score
+            FROM
+                public.articles articles
+            INNER JOIN
+                public.staging_news news
+            ON  articles.author=news.author AND
+                articles.title=news.title and
+                articles.published_date=news.published_date) test
+        FULL JOIN public.staging_crypto crypto
+        ON crypto.close_date=test.published_date;
+        """
