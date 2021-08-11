@@ -12,17 +12,12 @@ def get_role_arn(
     iam: botocore.client, DWH_POLICY_ARN: str, DWH_IAM_ROLE_NAME: str
 ) -> str:
     """
-    Description: Create IAM role that make Redshift able to
-        access S3 bucket in ReadOnly mode, attaches policy to
-        IAM role and gets the IAM role ARN.
-
-    Arguments:
-        iam (botocore.client): IAM client
-        DWH_POLICY_ARN (str): policy ARN
-        DWH_IAM_ROLE_NAME (str): name of IAM role
-
-    Returns:
-        string containing IAM role ARN
+    Create IAM role that make Redshift able to access S3 bucket in
+    ReadOnly mode, attaches policy to IAM role and gets the IAM role ARN
+    :param iam:                     AWS IAM client
+    :param DWH_POLICY_ARN:          policy ARN
+    :param DWH_IAM_ROLE_NAME:       name of IAM role
+    :return role_arn:               string containing IAM role ARN
     """
     try:
         iam.create_role(
@@ -54,15 +49,16 @@ def get_role_arn(
         "ResponseMetadata"
     ]["HTTPStatusCode"]
 
-    return iam.get_role(RoleName=DWH_IAM_ROLE_NAME)["Role"]["Arn"]
+    role_arn = iam.get_role(RoleName=DWH_IAM_ROLE_NAME)["Role"]["Arn"]
+    return role_arn
 
 
 def setup_s3_bucket(s3, bucket_name: str, region: str) -> None:
     """
-    Description: ...
-
-    Arguments: ...
-
+    Create/empty S3 bucket
+    :param s3:                      S3 resource
+    :param bucket_name:             S3 bucket name
+    :param region:                  S3 region
     """
     my_bucket = s3.Bucket(bucket_name)
 
@@ -105,9 +101,13 @@ def setup_s3_bucket(s3, bucket_name: str, region: str) -> None:
         print(f"`{bucket_name}` bucket created successfully.")
 
 
-def setup_redshift_cluster(ec2, redshift, roleArn):
+def setup_redshift_cluster(ec2, redshift, roleArn: str) -> str:
     """
-    TODO...
+    Setup Redshift on AWS cluster
+    :param ec2:             AWS ec2 client
+    :param redshift:        AWS redshift client
+    :param roleArn:         IAM role arn
+    :return endpoint:       AWS redshift endpoint arn
     """
     group_name = "redshift_security_group"
     response = ec2.describe_security_groups(
@@ -213,7 +213,7 @@ def setup_redshift_cluster(ec2, redshift, roleArn):
 
 def SetupAWS() -> None:
     """
-    TODO...
+    Setup AWS resources such as S3 buckets, Redshift cluster, roles/permissions/policies
     """
     my_config = MyConfigParser()
 

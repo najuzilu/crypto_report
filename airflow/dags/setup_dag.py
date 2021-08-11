@@ -9,6 +9,7 @@ from operators import (
 )
 from airflow import DAG
 
+# Simple dag to setup AWS resources
 default_args = {
     "owner": "udacity",
     "start_date": timezone.utcnow(),
