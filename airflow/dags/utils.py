@@ -1,7 +1,7 @@
 # python3
 from datetime import datetime, timedelta
+from typing import Tuple
 from pathlib import Path
-from typing import Dict
 import configparser
 import requests
 import json
@@ -81,7 +81,9 @@ class MyConfigParser:
 
 def request_api(uri: str) -> str:
     """
-    TODO...
+    Handle GET requests
+    :param uri:             Api uri
+    :return res.text:       If successful, response
     """
     try:
         res = requests.get(uri)
@@ -100,7 +102,9 @@ def request_api(uri: str) -> str:
 
 def get_json_objects(url: str) -> str:
     """
-    TODO...
+    Make Get request and if successful load data in json object
+    :param url:             Api url
+    :return
     """
 
     res = request_api(url)
@@ -113,9 +117,9 @@ def get_json_objects(url: str) -> str:
     return obs
 
 
-def flatten_json(obj: Dict) -> Dict:
+def flatten_json(obj: dict) -> dict:
     """
-    TODO...
+    Flatten json obj; doesn't handle lists
     """
     out = {}
 
@@ -132,7 +136,9 @@ def flatten_json(obj: Dict) -> Dict:
 
 def prev_month_date(ds: str) -> str:
     """
-    TODO...
+    Calculate previous month date
+    :param ds:                      Airflow macro reference `ds`
+    :return date_of_prev_month:     Date of previous month as string
     """
     # convert ds to datetime format
     ds_datetime = datetime.strptime(ds, "%Y-%m-%d")
@@ -152,9 +158,11 @@ def prev_month_date(ds: str) -> str:
     return date_of_prev_month  # .strftime("%Y-%m-%d")
 
 
-def process_ds(ds: str):
+def process_ds(ds: str) -> Tuple:
     """
-    TODO...
+    Calculate after and before `ds` timestemp
+    :param ds:                      Airflow macro reference `ds`
+    :return (after,before):         After/before date as timestamp
     """
     after = int(datetime.timestamp(prev_month_date(ds)))
     before = int(datetime.timestamp(datetime.strptime(ds, "%Y-%m-%d")))
