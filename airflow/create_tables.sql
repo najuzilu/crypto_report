@@ -91,8 +91,8 @@ CREATE TABLE IF NOT EXISTS public.articles (
 	title varchar(65535),
 	"url" varchar(65535),
 	url_to_image varchar(65535),
-  	published_at datetime,
-  	published_date varchar(256),
+	published_at datetime,
+	published_date varchar(256),
 	CONSTRAINT articles_pkey PRIMARY KEY (id)
 );
 
